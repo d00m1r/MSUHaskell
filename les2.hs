@@ -1,3 +1,4 @@
+import Data.Ratio
 maxNum :: Ord a => [a] -> a
 maxNum [a] = a
 maxNum (x:y:xs) = maxNum (max1 x y : xs)
@@ -150,7 +151,7 @@ myany f y
 myall :: (Ord t, Num t) => (t -> Bool) -> [t] -> Bool
 myall _ [] = False
 myall f y 
---map (>0)[x|x<-[1..10]]
+--map (>0)[x|x<-[1..10]] возвращает список [True,True,...]
     |checkPodlist (map (\x-> x>0 || x<=0) y) ([ f a | a<-y ]) = True
     | otherwise = False
 
@@ -162,14 +163,12 @@ myLength [] = 0
 myLength [a] = 1
 myLength (x:xs) = 1 + myLength xs
 
--- multiplicationOfElements a b i j k
---     if i < (myLength a - 1) then
---         [if j < myLength (b!!0) - 1 
---             then [(multiplicationOfElementsK a b 0 i j)] ++ multiplicationOfElements a b i (j+1)
---             else [multiplicationOfElementsK a b 0 i j] 
---         ] ++ multiplicationOfElements a b (i+1) j k
---     else  [multiplicationOfElements a b i j k]
---?? Как объединить их все в одну функцию связать через множественные if else 
+-- for i in range(len(A)):
+--         for j in range(len(B[0])):
+--             for k in range(len(B)):
+--                 C[i][j] += A[i][k]*B[k][j]
+-- Python
+
 multiplicationOfElementsI :: Num a => [[a]] -> [[a]] -> Int -> [[a]]
 multiplicationOfElementsI a b i
     | i < (myLength a - 1) = [(multiplicationOfElementsJ a b i 0)] ++ multiplicationOfElementsI a b (i+1)
@@ -211,7 +210,108 @@ checkRows lengthX (xs:xss)
     
 -------------------------------------------------
 
+getrow :: (Num t, Eq t) => [[a]] -> t -> [a]
+getrow [] y = []
+getrow (x:xs) y = if y == 1 then x else getrow xs (y-1)
 
+getcol :: [[a]] -> Int -> [a]
+getcol [] y = []
+getcol (x:xs) y = [x !! (y-1)] ++ getcol xs y
 
+mult_vector :: Num a => [a] -> [a] -> a
+mult_vector xs ys = sum[(xs!!j) * (ys!!j) | j<-[0..length xs -1]]
 
+mult :: (Eq p, Num p, Num a) => [[a]] -> [[a]] -> p -> Int -> a
+mult x y i j = mult_vector row col
+    where
+        row = getrow x i
+        col = getcol y j
 
+mult_matrix :: Num a => [[a]] -> [[a]] -> [[a]]
+mult_matrix x y = [[mult x y i j|j<-[1..len_y]]|i<-[1..len_x]]
+    where
+        len_x = length(x)
+        len_y = length(head y)
+
+matrixMultiply :: Num a => [[a]] -> [[a]] -> [[a]] 
+matrixMultiply a b = map (mult1 [] b) a 
+    where 
+        mult1 xs [] _ = xs 
+        mult1 xs _ [] = xs 
+        mult1 [] (x':xs') (y:ys) = mult1 (map (y *) x') xs' ys 
+        mult1 xs (x':xs') (y:ys) = mult1 (zipWith (\u v -> u + v * y) xs x') xs' ys
+
+mult1:: Num a => [[a]] -> [[a]] -> [[a]]
+mult1 uss vss = map ((\xs -> if null xs then [] else
+    foldl1 (zipWith (+)) xs). zipWith (\vs u -> map (u*) vs) vss) uss
+-- null если список пуст то True иначе False
+
+-------------------------------------------------
+-- Свертка
+foldrm:: (a->b->b)->b->[a]->b
+foldrm f x0 [] = x0
+foldrm f x0 (x:xs) = f x (foldrm f x0 xs)
+
+foldlm:: (b->a->b)->b->[a]->b
+foldlm f x0 [] = x0
+foldlm f x0 (x:xs) = foldlm f (f x0 x) xs
+
+summa :: (Num a)  => [a] ->a
+summa xs = foldlm (\acc x -> acc + x) 0 xs
+
+summa_right :: (Num a)  => [a] ->a
+summa_right = foldrm (+) 0 
+
+product_right :: (Num a)  => [a] ->a
+product_right = foldrm (*) 1
+
+summa1 :: (Num a)  => [a] ->a
+summa1 xs = foldlm (\acc x -> acc - x) 0 xs
+
+contactination :: [[a]]->[a]
+contactination = foldrm (++) []
+
+elem1 :: (Eq a)=>a->[a]->Bool
+elem1 x = foldlm (\s x1 -> if x1==x then True else s) False
+
+------------------------------------------------
+-- Вычисление определителя
+
+--удаление строки
+dely1 :: Int-> [a] -> [a]
+dely1 1 (x:xs) = xs
+dely1 k (x:xs) = [x] ++ dely1 (k-1) xs
+
+--удаление столбца
+deletesty::(Num a) => Int -> [[a]] -> [[a]]
+deletesty k x = [c |c<- [ dely1 k q | q<-x ]]
+
+determinant :: Num a => [[a]] -> a
+determinant [] = error "Empty Error"
+determinant [[x]] = x
+determinant (x:xs) = 
+    sum [(-1)^(j+1)* (head [x])!!(j-1) * determinant(deletesty j xs) | j<-[1..(length x) ]]
+--head$head[[1,2],[3,4]] -> 1
+--head(head[[1,2],[3,4]]) -> 1
+
+-----------------------------------------------
+--Вычисление обратной матрицы
+-- a = [[1,2,3],[4,1,6],[7,1,1]]
+complementMatrix :: Num a => [[a]] -> [[a]]
+complementMatrix x = [[(-1)^(i+j) * determinant(deletesty j (dely1 i x)) | j<-[1..len]] | i<-[1..len]]
+    where
+        len = length (x!!0)
+
+inverseMatrix :: Integral a => [[a]] -> [[Ratio a]]
+inverseMatrix x
+    | determinant x == 0 = error "Inverse matrix does not exist"
+    | otherwise = (map.map) (% determinant x) (transpose(complementMatrix x))
+    -- (map.map) (%2) [[1,2],[3,4]]
+    -- map           :: (a -> b) ->   [a]   ->   [b]
+    -- (map.map)     :: (a -> b) ->  [[a]]  ->  [[b]]
+    -- (map.map.map) :: (a -> b) -> [[[a]]] -> [[[b]]]
+
+transpose :: [[a]] -> [[a]]
+transpose ([]:_) = []
+transpose [[x]] = [[x]]
+transpose x = [map head x] ++ transpose(map tail x) 
