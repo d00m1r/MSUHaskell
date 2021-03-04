@@ -315,3 +315,33 @@ transpose :: [[a]] -> [[a]]
 transpose ([]:_) = []
 transpose [[x]] = [[x]]
 transpose x = [map head x] ++ transpose(map tail x) 
+
+-----------------------------------------------
+--Разбить его на подсписки
+podspisok :: [Int] ->[[Int]]
+podspisok []  = [[]]
+podspisok (x:xs) = [frstn (x:xs) n | n <- [1..length (x:xs)]] ++ podspisok xs
+    where frstn x n | length x < n = []
+          frstn _ 0 = []
+          frstn (x:xs) n = x : frstn xs (n-1)
+ ---------------------------
+podspisok11:: Eq a=> [a] -> [[a]]
+podspisok11 [] = [[]]
+podspisok11 (x:xs) = pods [x] xs ++ podspisok11 xs
+    where
+        pods a [] = [a]
+        pods a (y:ys) = a:pods (a++[y]) ys
+
+-- sublist (x:xs) = [ if i == x then x else sublist(xs)| i<-[1..length (x:xs)]] ++ sublist xs
+--Упорядочить список и ДОДЕЛАТЬ
+quickSort :: Ord a => [a] -> [a]
+quickSort [] = []
+quickSort (x:xs)
+    | length(x:xs) < 2 = (x:xs)
+    | otherwise = quickSort(less) ++ [x] ++ quickSort(greater)
+    where 
+        less = filter (<=x) xs
+        greater = [ i | i<-xs, i>x]
+
+
+
