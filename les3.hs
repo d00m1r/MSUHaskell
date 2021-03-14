@@ -103,10 +103,15 @@ removeElement k (x:xs) = x: removeElement (k-1) xs
 
 quickSortHalfHalf [] = []
 quickSortHalfHalf [x] = [x]
-quickSortHalfHalf (xs) = quickSortHalfHalf(less1) ++ [halfhalf1] ++ quickSortHalfHalf(greater1) ++ [half] ++ quickSortHalfHalf(less2) ++ [halfhalf2] ++ quickSortHalfHalf(greater2)
+quickSortHalfHalf (xs) = 
+    let less1 = [i | i<-listWithoutHalfHalfLess, i<(halfhalf1)]
+        greater1 = if halfhalf1 /= half then [i | i<-listWithoutHalfHalfLess, i>(halfhalf1) && i<=(half)] else [i | i<-listWithoutHalfHalfLess, i>(halfhalf1) && i<(half)]
+        less2 = if halfhalf2 /= half then [i | i<-listWithoutHalfHalfGreater, i>(half) && i<=(halfhalf2)] else [i | i<-listWithoutHalfHalfGreater, i>(half) && i<(halfhalf2)]
+        greater2 = [i | i<-listWithoutHalfHalfGreater, i>(halfhalf2)]
+    in quickSortHalfHalf(less1) ++ [halfhalf1] ++ quickSortHalfHalf(greater1) ++ [half] ++ quickSortHalfHalf(less2) ++ [halfhalf2] ++ quickSortHalfHalf(greater2)
     where 
-        testhalf = div (length(xs)) 2 -- problems with minus
-        testhalfhalf1 = div testhalf 2
+        testhalf = quot (length(xs)) 2 -- problems with minus
+        testhalfhalf1 = quot testhalf 2
         testhalfhalf2 = testhalf+testhalfhalf1
         --halfList = sortHalves testhalfhalf1 testhalfhalf2 testhalf [xs!!testhalfhalf1, xs!!testhalfhalf2, xs!!testhalf]
         halfList = someSort [xs!!testhalfhalf1, xs!!testhalfhalf2, xs!!testhalf]
@@ -116,39 +121,58 @@ quickSortHalfHalf (xs) = quickSortHalfHalf(less1) ++ [halfhalf1] ++ quickSortHal
         listWithoutHalf = removeNum (half) xs
         listWithoutHalfHalfLess = removeNum (halfhalf1) listWithoutHalf
         listWithoutHalfHalfGreater = removeNum (halfhalf2) listWithoutHalf
-        less1 = [i | i<-listWithoutHalfHalfLess, i<=(halfhalf1)]-- a = 1:1:1:[1..10]
-        greater1 = [i | i<-listWithoutHalfHalfLess, i>(halfhalf1) && i<=(half)]
-        less2 = [i | i<-listWithoutHalfHalfGreater, i>(half) && i<=(halfhalf2)]
-        greater2 = [i | i<-listWithoutHalfHalfGreater, i>(halfhalf2)]
+
+mergesort'merge :: (Ord a) => [a] -> [a] -> [a]
+mergesort'merge [] xs = xs
+mergesort'merge xs [] = xs
+mergesort'merge (x:xs) (y:ys)
+    | (x < y) = x:mergesort'merge xs (y:ys)
+    | otherwise = y:mergesort'merge (x:xs) ys
+ 
+mergesort'splitinhalf :: [a] -> ([a], [a])
+mergesort'splitinhalf xs = (take n xs, drop n xs)
+    where n = (length xs) `div` 2 
+ 
+mergesort :: (Ord a) => [a] -> [a]
+mergesort xs 
+    | (length xs) > 1 = mergesort'merge (mergesort ls) (mergesort rs)
+    | otherwise = xs
+    where (ls, rs) = mergesort'splitinhalf xs
 --[5,1,2,5,6,7,0,-1,-100,100,1000,1]
 --[-100,-1,0,1,1,2,5,5,6,7,100,1000]
--- sortHalves x y z xs = [xs!!minIndex] ++ [xs!!0] ++ [xs!!maxIndex]--ret el el el
---     where 
---         maxIndex = checkHalvesMax x y z xs
---         minIndex = checkHalvesMin x y z xs
 
--- remove2Num x y [] = []
--- remove2Num x y (xs:xss)
---     | x==xs || y==xs = remove2Num x y xss
---     | otherwise = xs:remove2Num x y xss
+--------------------------------------
+--Сортировка Подсчетом(работает и с отрицательными)
+countingSort :: (Num a, Enum a, Ord a) => [a] -> [a]
+countingSort [] = []
+countingSort x = printByIndex xMin [ countElemInList x i |i<-[xMin..xMax]]
+    where
+        xMin = minimum x
+        xMax = maximum x
 
--- checkHalvesMax x y z xs
---     | max3 (xs!!x) (xs!!y) (xs!!z) == (xs!!x) = x
---     | max3 (xs!!x) (xs!!y) (xs!!z) == (xs!!y) = y
---     | max3 (xs!!x) (xs!!y) (xs!!z) == (xs!!z) = z
--- checkHalvesMin x y z xs
---     | min3 (xs!!x) (xs!!y) (xs!!z) == (xs!!x) = x
---     | min3 (xs!!x) (xs!!y) (xs!!z) == (xs!!y) = y
---     | min3 (xs!!x) (xs!!y) (xs!!z) == (xs!!z) = z
+printByIndex index [] = []
+printByIndex index (x:xs) 
+    | x < 1 = printByIndex (index+1) xs
+    | otherwise = index:printByIndex index (newX:xs)
+    where
+        newX = x - 1
 
--- max3 :: (Ord) a=> a-> a-> a-> a
--- max3 x y z
---     | x >= y && x >= z = x
---     | y >= x && y >= z = y
---     | otherwise = z
+--Кол-во вхождений элемента в список
+countElemInList :: Eq a => [a] -> a -> Int
+countElemInList [] f = 0
+countElemInList (x:xs) f 
+    | f == x = 1 + (countElemInList xs f)
+    | otherwise = countElemInList xs f
 
--- min3 :: Ord a => a -> a -> a -> a
--- min3 x y z
---     | x <= y && x <= z = x
---     | y <= x && y <= z = y
---     | otherwise = z
+--------------------------------------
+indexElw :: (Eq a) => [a] -> a -> Int -> Int
+indexElw [] _ _ = (-1)
+indexElw (x:xs) y n | (x==y) = n
+                   | otherwise = indexElw xs y (n+1)
+-- import Data.Array
+-- countingSort :: (Ix n) => [n] -> n -> n -> [n]
+-- countingSort l lo hi = concatMap (uncurry $ flip replicate) count
+--   where count = assocs . accumArray (+) 0 (lo, hi) . map (\i -> (i, 1)) $ l
+myMaximum :: Ord a => [a] -> a
+myMaximum [x] = x
+myMaximum (x:xs) = if x > myMaximum xs then x else myMaximum xs
