@@ -53,14 +53,6 @@ quickSortGreater x (xs:xss)
     | x > xs = quickSortGreater x xss
     | otherwise = [xs] ++ quickSortGreater x xss
 
--- sort2 :: Ord a => [a]->[a]
--- sort2 [] = []
--- sort2 [x] = [x]
--- sort2 (x1 : x2 : xs)
---    | (x1<x2) = let (a:as) = sort2 (x1:xs) 
---                 in a: sort2 (x2:as)   
---    | otherwise = let (a:as) = sort2 (x2:xs) 
---                 in a: sort2 (x1:as)
 --------------------------------------
 bubble1 :: (Ord a) => [a]->[a]
 bubble1 (x:[]) = [x]
