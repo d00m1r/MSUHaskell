@@ -96,7 +96,7 @@ removeElement k (x:xs) = x: removeElement (k-1) xs
 quickSortHalfHalf [] = []
 quickSortHalfHalf [x] = [x]
 quickSortHalfHalf (xs) = 
-    let less1 = [i | i<-listWithoutHalfHalfLess, i<(halfhalf1)]
+    let less1 = [i | i<-listWithoutHalfHalfLess, i<=(halfhalf1)]
         greater1 = if halfhalf1 /= half then [i | i<-listWithoutHalfHalfLess, i>(halfhalf1) && i<=(half)] else [i | i<-listWithoutHalfHalfLess, i>(halfhalf1) && i<(half)]
         less2 = if halfhalf2 /= half then [i | i<-listWithoutHalfHalfGreater, i>(half) && i<=(halfhalf2)] else [i | i<-listWithoutHalfHalfGreater, i>(half) && i<(halfhalf2)]
         greater2 = [i | i<-listWithoutHalfHalfGreater, i>(halfhalf2)]
@@ -168,3 +168,36 @@ indexElw (x:xs) y n | (x==y) = n
 myMaximum :: Ord a => [a] -> a
 myMaximum [x] = x
 myMaximum (x:xs) = if x > myMaximum xs then x else myMaximum xs
+
+--------------------------------------------------
+listLength :: [a] -> Int
+listLength = foldl (\n _ -> n + 1) 0
+
+--разбивает на части [первые n элементов] [всё остальное]
+mySplitAt :: Int -> [a] -> ([a], [a])
+mySplitAt 0 xs = ([], xs)
+mySplitAt n [] = error "Too short list"
+mySplitAt n (x:xs) = (x:left, right)
+                   where
+                       (left, right) = mySplitAt (n - 1) xs
+
+--при этом сортирует
+mergeLists :: (Ord a) => [a] -> [a] -> [a]
+mergeLists [] ys = ys
+mergeLists xs [] = xs
+mergeLists (x:xs) (y:ys) = if x <= y 
+                                then x : (mergeLists xs (y:ys))
+                                else y : (mergeLists (x:xs) ys)
+
+
+mergeSort :: (Ord a) => [a] -> [a]
+mergeSort [] = []
+mergeSort [x] = [x]
+mergeSort xs = mergeLists (mergeSort leftPart) (mergeSort rightPart)
+             where
+                (leftPart, rightPart) = (take half xs, drop half xs) -- splitListToHalves
+                half = div (length xs) 2
+--------------------------------------------------
+
+
+
